@@ -39,17 +39,24 @@ html.gdocs-dark-filter {
  * ============================================================ */
 
 html.gdocs-dark-targeted {
-  filter: invert(0.92) hue-rotate(180deg) !important;
+  filter: invert(1) hue-rotate(180deg) !important;
 }
 
 
 /* ============================================================
  * IMAGE RESTORATION (Targeted strategy only)
- * Double-invert media elements that exist as actual DOM nodes
- * to restore their original colors.
+ * Double-invert LEAF media elements to cancel the parent html
+ * inversion. Uses invert(1) to perfectly cancel the parent's
+ * invert(1): composite = 1-(1-x) = x (identity).
+ *
+ * CRITICAL: Only apply filter to the deepest media element
+ * (e.g. <img>), NOT to its container (.kix-embeddedobject).
+ * Filtering both container AND child causes triple-inversion.
  * ============================================================ */
 
-/* --- All <img> elements (doc images, avatars, logos) --- */
+/* --- All <img> elements (doc images, avatars, logos) ---
+ * This is the primary rule. Google Docs renders embedded images
+ * as actual <img> tags inside DOM overlay containers. */
 html.gdocs-dark-targeted img {
   filter: invert(1) hue-rotate(180deg) !important;
 }
@@ -60,36 +67,18 @@ html.gdocs-dark-targeted iframe {
   filter: invert(1) hue-rotate(180deg) !important;
 }
 
-/* --- Google Docs embedded objects (images, charts, drawings) ---
- * These are DOM overlays that Docs positions on top of the canvas.
- * If the image is rendered as a separate DOM element inside
- * the embedded object container, this will restore it. */
-html.gdocs-dark-targeted .kix-embeddedobject,
-html.gdocs-dark-targeted .kix-embeddedobject-overlay {
+/* --- Inline drawings (rendered as SVG/canvas, not <img>) ---
+ * These are NOT containers with <img> inside, they are the
+ * actual rendered drawing element. */
+html.gdocs-dark-targeted .kix-inlinedrawing > canvas,
+html.gdocs-dark-targeted .kix-inlinedrawing > svg {
   filter: invert(1) hue-rotate(180deg) !important;
 }
 
-/* --- Inline drawing overlays --- */
-html.gdocs-dark-targeted .kix-inlinedrawing {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- User profile / avatar images --- */
-html.gdocs-dark-targeted .docs-titlebar-share-client-photo,
-html.gdocs-dark-targeted .gb_Nc,
-html.gdocs-dark-targeted .docs-presence-plus-image {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- Google account menu avatar --- */
-html.gdocs-dark-targeted .gbii,
-html.gdocs-dark-targeted .gb_7a {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- Header / app branding images --- */
-html.gdocs-dark-targeted .docs-homescreen-header-logo img,
-html.gdocs-dark-targeted .doc-icon img {
+/* --- Background images (elements using CSS background-image) ---
+ * Some Docs elements render images via background-image
+ * instead of <img> tags. Target these specifically. */
+html.gdocs-dark-targeted .kix-appview-editor [style*="background-image"] {
   filter: invert(1) hue-rotate(180deg) !important;
 }
 
