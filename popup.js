@@ -24,6 +24,8 @@
   const imageNoticeText = document.getElementById('imageNoticeText');
   const notDocs = document.getElementById('notDocs');
   const mainContent = document.getElementById('mainContent');
+  const reloadBanner = document.getElementById('reloadBanner');
+  const reloadBtn = document.getElementById('reloadBtn');
   const strategyRadios = document.querySelectorAll('input[name="strategy"]');
 
   // ── Helpers ───────────────────────────────────────────────────────
@@ -47,7 +49,7 @@
         'Full inversion mode — all images and media will appear inverted along with the page.';
     } else {
       imageNoticeText.textContent =
-        'Smart mode restores images that exist as DOM elements. Canvas-rendered images may still be affected.';
+        'Smart mode restores images in natural colors. If your doc is already open, reload to refresh existing images.';
     }
   }
 
@@ -69,6 +71,11 @@
     // Update UI
     updateUI(state);
 
+    // Show reload banner to prompt refreshing already-rendered images
+    if (reloadBanner) {
+      reloadBanner.classList.add('visible');
+    }
+
     // Notify active tab's content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0] && tabs[0].url && tabs[0].url.includes('docs.google.com/document')) {
@@ -88,6 +95,17 @@
   strategyRadios.forEach((radio) => {
     radio.addEventListener('change', persistAndNotify);
   });
+
+  if (reloadBtn) {
+    reloadBtn.addEventListener('click', () => {
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0] && tabs[0].id) {
+          chrome.tabs.reload(tabs[0].id);
+          window.close();
+        }
+      });
+    });
+  }
 
   // ── Initialization ────────────────────────────────────────────────
 
