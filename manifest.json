@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Dark Mode for Google Docs",
-  "version": "1.0.0",
-  "description": "Adds a togglable dark mode to the Google Docs editor with multiple rendering strategies.",
+  "name": "DarkSpace - Dark Mode for Google Docs, Sheets & Classroom",
+  "short_name": "DarkSpace",
+  "version": "2.0.0",
+  "description": "High-precision Dark Mode suite for Google Docs, Sheets, Classroom, Slides, Forms, Drawings, Scholar, Translate, and Contacts.",
   "permissions": [
     "storage",
     "activeTab"
@@ -22,22 +23,47 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://docs.google.com/document/*"],
+      "matches": [
+        "*://docs.google.com/document/*",
+        "*://docs.google.com/spreadsheets/*",
+        "*://docs.google.com/presentation/*",
+        "*://docs.google.com/forms/*",
+        "*://docs.google.com/drawings/*"
+      ],
       "js": ["canvas-hook.js"],
       "world": "MAIN",
       "run_at": "document_start"
     },
     {
-      "matches": ["https://docs.google.com/document/*"],
+      "matches": [
+        "*://docs.google.com/document/*",
+        "*://docs.google.com/spreadsheets/*",
+        "*://docs.google.com/presentation/*",
+        "*://docs.google.com/forms/*",
+        "*://docs.google.com/drawings/*",
+        "*://classroom.google.com/*",
+        "*://scholar.google.com/*",
+        "*://translate.google.com/*",
+        "*://contacts.google.com/*"
+      ],
       "js": ["content.js"],
       "css": ["darkmode.css"],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["canvas-hook.js"],
-      "matches": ["https://docs.google.com/*"]
+      "resources": [
+        "canvas-hook.js",
+        "darkmode.css"
+      ],
+      "matches": [
+        "*://docs.google.com/*",
+        "*://classroom.google.com/*",
+        "*://scholar.google.com/*",
+        "*://translate.google.com/*",
+        "*://contacts.google.com/*"
+      ]
     }
   ]
 }

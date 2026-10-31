@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dark Mode for Google Docs</title>
+  <title>DarkSpace</title>
   <style>
     /* ── Reset & Base ─────────────────────────────────────── */
     *,
@@ -15,405 +15,339 @@
     }
 
     body {
-      width: 320px;
-      font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #0f0f1a;
-      color: #e0e0ec;
+      width: 330px;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', Roboto, sans-serif;
+      background: #131314;
+      color: #e8eaed;
       overflow: hidden;
+      user-select: none;
     }
 
     /* ── Header ───────────────────────────────────────────── */
     .header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 16px 18px 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid #282a2e;
+      background: #18191b;
     }
 
-    .header-icon {
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
       width: 28px;
       height: 28px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border-radius: 7px;
+      background: linear-gradient(135deg, #8ab4f8 0%, #c58af9 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 14px;
-      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(138, 180, 248, 0.3);
     }
 
-    .header h1 {
+    .brand-text h1 {
       font-size: 14px;
       font-weight: 600;
+      color: #f1f3f4;
       letter-spacing: -0.01em;
-      color: #f0f0fa;
     }
 
-    .header p {
-      font-size: 11px;
-      color: #8888a8;
-      margin-top: 1px;
+    .brand-text p {
+      font-size: 10.5px;
+      color: #9aa0a6;
     }
 
-    /* ── Main Toggle ──────────────────────────────────────── */
-    .toggle-section {
-      padding: 16px 18px;
+    .app-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 12px;
+      background: #282a2e;
+      color: #9aa0a6;
+      border: 1px solid #3c4043;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .app-badge.active-app {
+      background: rgba(138, 180, 248, 0.15);
+      color: #8ab4f8;
+      border-color: rgba(138, 180, 248, 0.3);
+    }
+
+    /* ── Primary Controls ─────────────────────────────────── */
+    .controls {
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .control-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 8px 12px;
+      background: #1e1f22;
+      border-radius: 8px;
+      border: 1px solid #282a2e;
+      transition: border-color 0.2s ease;
     }
 
-    .toggle-label {
-      font-size: 13px;
+    .control-row:hover {
+      border-color: #3c4043;
+    }
+
+    .control-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .control-title {
+      font-size: 12.5px;
       font-weight: 500;
-      color: #d0d0e0;
+      color: #e8eaed;
     }
 
-    .toggle-switch {
+    .control-desc {
+      font-size: 10.5px;
+      color: #9aa0a6;
+    }
+
+    /* ── Switch ───────────────────────────────────────────── */
+    .switch {
       position: relative;
-      width: 44px;
-      height: 24px;
+      width: 42px;
+      height: 22px;
+      flex-shrink: 0;
       cursor: pointer;
     }
 
-    .toggle-switch input {
+    .switch input {
       opacity: 0;
       width: 0;
       height: 0;
     }
 
-    .toggle-slider {
+    .slider {
       position: absolute;
       inset: 0;
-      background: #2a2a40;
-      border-radius: 12px;
-      transition: background 0.25s ease;
+      background: #3c4043;
+      border-radius: 11px;
+      transition: background 0.2s ease;
     }
 
-    .toggle-slider::before {
+    .slider::before {
       content: '';
       position: absolute;
-      left: 3px;
-      top: 3px;
+      left: 2px;
+      top: 2px;
       width: 18px;
       height: 18px;
-      background: #5a5a7a;
+      background: #9aa0a6;
       border-radius: 50%;
-      transition: transform 0.25s ease, background 0.25s ease;
+      transition: transform 0.2s ease, background 0.2s ease;
     }
 
-    .toggle-switch input:checked + .toggle-slider {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    .switch input:checked + .slider {
+      background: #8ab4f8;
     }
 
-    .toggle-switch input:checked + .toggle-slider::before {
+    .switch input:checked + .slider::before {
       transform: translateX(20px);
-      background: #ffffff;
+      background: #131314;
     }
 
-    /* ── Status Indicator ─────────────────────────────────── */
-    .status-row {
+    .switch input:disabled + .slider {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ── Appearance Mode Segmented Control ────────────────── */
+    .mode-section {
+      padding: 0 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mode-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9aa0a6;
+    }
+
+    .segmented-control {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #1e1f22;
+      border-radius: 8px;
+      padding: 3px;
+      border: 1px solid #282a2e;
+      gap: 4px;
+    }
+
+    .segment-btn {
+      border: none;
+      background: transparent;
+      color: #9aa0a6;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: all 0.2s ease;
+    }
+
+    .segment-btn small {
+      font-size: 9.5px;
+      opacity: 0.7;
+      font-weight: 400;
+    }
+
+    .segment-btn.active {
+      background: #282a2e;
+      color: #8ab4f8;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .segment-btn:hover:not(.active) {
+      color: #e8eaed;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* ── Inactive Notice (when not on Google App) ──────────── */
+    .inactive-card {
+      display: none;
+      padding: 12px 14px;
+      background: rgba(138, 180, 248, 0.06);
+      border-radius: 8px;
+      border: 1px solid rgba(138, 180, 248, 0.2);
+      margin: 0 16px 12px;
+      font-size: 11px;
+      color: #9aa0a6;
+      line-height: 1.4;
+    }
+
+    .inactive-card.visible {
+      display: block;
+    }
+
+    .inactive-card strong {
+      color: #8ab4f8;
+    }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    .footer {
+      padding: 10px 16px;
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: space-between;
+      border-top: 1px solid #282a2e;
+      font-size: 10px;
+      color: #5f6368;
+      background: #18191b;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #4a4a60;
-      transition: background 0.3s ease, box-shadow 0.3s ease;
+      background: #5f6368;
     }
 
     .status-dot.active {
-      background: #22c55e;
-      box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
-    }
-
-    .status-text {
-      font-size: 11px;
-      color: #7a7a98;
-    }
-
-    /* ── Reload Banner ────────────────────────────────────── */
-    .reload-banner {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 9px 18px;
-      background: rgba(99, 102, 241, 0.12);
-      border-bottom: 1px solid rgba(99, 102, 241, 0.25);
-      font-size: 11px;
-      color: #c7d2fe;
-      animation: fadeIn 0.2s ease;
-    }
-
-    .reload-banner.visible {
-      display: flex;
-    }
-
-    .reload-btn {
-      background: #6366f1;
-      color: #ffffff;
-      border: none;
-      border-radius: 4px;
-      padding: 4px 10px;
-      font-size: 11px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s ease;
-      white-space: nowrap;
-    }
-
-    .reload-btn:hover {
-      background: #4f46e5;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── Strategy Selector ────────────────────────────────── */
-    .section {
-      padding: 14px 18px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .section-title {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #6a6a88;
-      margin-bottom: 10px;
-    }
-
-    .strategy-options {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .strategy-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: #16162a;
-      border: 1.5px solid transparent;
-      cursor: pointer;
-      transition: border-color 0.2s ease, background 0.2s ease;
-    }
-
-    .strategy-card:hover {
-      background: #1a1a32;
-    }
-
-    .strategy-card.selected {
-      border-color: #6366f1;
-      background: rgba(99, 102, 241, 0.08);
-    }
-
-    .strategy-card input[type="radio"] {
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      border: 2px solid #3a3a5a;
-      border-radius: 50%;
-      margin-top: 1px;
-      flex-shrink: 0;
-      transition: border-color 0.2s ease;
-      position: relative;
-      cursor: pointer;
-    }
-
-    .strategy-card input[type="radio"]:checked {
-      border-color: #6366f1;
-    }
-
-    .strategy-card input[type="radio"]:checked::after {
-      content: '';
-      position: absolute;
-      top: 3px;
-      left: 3px;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #6366f1;
-    }
-
-    .strategy-info h3 {
-      font-size: 12px;
-      font-weight: 600;
-      color: #d0d0e0;
-      margin-bottom: 2px;
-    }
-
-    .strategy-info p {
-      font-size: 10.5px;
-      color: #7a7a98;
-      line-height: 1.4;
-    }
-
-    .strategy-badge {
-      display: inline-block;
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 2px 6px;
-      border-radius: 4px;
-      margin-left: 6px;
-      vertical-align: middle;
-    }
-
-    .badge-quick {
-      background: rgba(234, 179, 8, 0.15);
-      color: #eab308;
-    }
-
-    .badge-precise {
-      background: rgba(34, 197, 94, 0.15);
-      color: #22c55e;
-    }
-
-    /* ── Notices ──────────────────────────────────────────── */
-    .notice {
-      padding: 10px 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 10.5px;
-      color: #7a7a98;
-      background: rgba(99, 102, 241, 0.05);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }
-
-    .notice-icon {
-      font-size: 13px;
-      flex-shrink: 0;
-    }
-
-    .notice.hidden {
-      display: none;
-    }
-
-    /* ── Footer ───────────────────────────────────────────── */
-    .footer {
-      padding: 10px 18px;
-      text-align: center;
-      font-size: 10px;
-      color: #4a4a68;
-    }
-
-    /* ── Not on Docs message ──────────────────────────────── */
-    .not-docs {
-      padding: 30px 18px;
-      text-align: center;
-      display: none;
-    }
-
-    .not-docs.visible {
-      display: block;
-    }
-
-    .not-docs .not-docs-icon {
-      font-size: 32px;
-      margin-bottom: 10px;
-    }
-
-    .not-docs h2 {
-      font-size: 14px;
-      font-weight: 600;
-      color: #d0d0e0;
-      margin-bottom: 4px;
-    }
-
-    .not-docs p {
-      font-size: 11px;
-      color: #6a6a88;
-      line-height: 1.5;
-    }
-
-    .main-content.hidden {
-      display: none;
+      background: #81c995;
+      box-shadow: 0 0 6px rgba(129, 201, 149, 0.5);
     }
   </style>
 </head>
 <body>
   <!-- Header -->
   <div class="header">
-    <div class="header-icon">🌙</div>
-    <div>
-      <h1>Dark Mode for Docs</h1>
-      <p>Comfortable editing, day or night</p>
-    </div>
-  </div>
-
-  <!-- Not on Google Docs message -->
-  <div class="not-docs" id="notDocs">
-    <div class="not-docs-icon">📄</div>
-    <h2>Not on Google Docs</h2>
-    <p>Open a Google Docs document to use dark mode. Navigate to <strong>docs.google.com</strong> to get started.</p>
-  </div>
-
-  <!-- Main content -->
-  <div class="main-content" id="mainContent">
-    <!-- Master Toggle -->
-    <div class="toggle-section">
-      <div class="status-row">
-        <div class="status-dot" id="statusDot"></div>
-        <span class="status-text" id="statusText">Dark mode off</span>
+    <div class="brand">
+      <div class="logo-icon">✨</div>
+      <div class="brand-text">
+        <h1>DarkSpace</h1>
+        <p>Google Workspace Dark Suite</p>
       </div>
-      <label class="toggle-switch">
-        <input type="checkbox" id="toggleDark" />
-        <span class="toggle-slider"></span>
+    </div>
+    <span class="app-badge" id="appBadge">Detecting...</span>
+  </div>
+
+  <!-- Primary Controls -->
+  <div class="controls">
+    <!-- 1. Master Switch -->
+    <div class="control-row">
+      <div class="control-info">
+        <span class="control-title">Master Dark Mode</span>
+        <span class="control-desc">Global switch for all Google apps</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="masterToggle" checked />
+        <span class="slider"></span>
       </label>
     </div>
 
-    <!-- Reload Banner (prompt to refresh images if doc is already open) -->
-    <div class="reload-banner" id="reloadBanner">
-      <span>🔄 Reload doc to refresh images</span>
-      <button class="reload-btn" id="reloadBtn" type="button">Reload</button>
-    </div>
-
-    <!-- Strategy Selector -->
-    <div class="section">
-      <div class="section-title">Rendering Strategy</div>
-      <div class="strategy-options">
-        <label class="strategy-card selected" id="cardTargeted" data-strategy="targeted">
-          <input type="radio" name="strategy" value="targeted" checked />
-          <div class="strategy-info">
-            <h3>Smart Inversion <span class="strategy-badge badge-precise">Recommended</span></h3>
-            <p>Inverts entire page + restores images &amp; media via double-invert. Fine-tuned colors for links, selections, and scrollbars.</p>
-          </div>
-        </label>
-        <label class="strategy-card" id="cardFilter" data-strategy="filter">
-          <input type="radio" name="strategy" value="filter" />
-          <div class="strategy-info">
-            <h3>Full Inversion <span class="strategy-badge badge-quick">Simple</span></h3>
-            <p>Inverts entire page uniformly. Everything goes dark, but all images and media also appear inverted.</p>
-          </div>
-        </label>
+    <!-- 2. App-Specific Switch -->
+    <div class="control-row" id="appRow">
+      <div class="control-info">
+        <span class="control-title" id="appToggleTitle">Enable for This App</span>
+        <span class="control-desc" id="appToggleDesc">Active for this Google application</span>
       </div>
+      <label class="switch">
+        <input type="checkbox" id="appToggle" checked />
+        <span class="slider"></span>
+      </label>
     </div>
+  </div>
 
-    <!-- Image info notice -->
-    <div class="notice" id="imageNotice">
-      <span class="notice-icon">🖼️</span>
-      <span id="imageNoticeText">Smart mode pre-inverts canvas images and DOM media to display them in their natural true colors.</span>
+  <!-- 3. Appearance Mode (Docs, Sheets, Slides, Drawings) -->
+  <div class="mode-section" id="modeSection">
+    <span class="mode-label">Appearance Mode</span>
+    <div class="segmented-control">
+      <button type="button" class="segment-btn active" id="btnModeFull" data-mode="full">
+        Full Dark
+        <small>Dark UI + Dark Canvas</small>
+      </button>
+      <button type="button" class="segment-btn" id="btnModeUiOnly" data-mode="ui-only">
+        UI Only
+        <small>Dark UI + White Canvas</small>
+      </button>
     </div>
+  </div>
+
+  <!-- Inactive notice when not on a supported Google App -->
+  <div class="inactive-card" id="inactiveCard">
+    Open a supported Google service (<strong>Docs</strong>, <strong>Sheets</strong>, <strong>Classroom</strong>, <strong>Slides</strong>, <strong>Forms</strong>, <strong>Drawings</strong>, <strong>Scholar</strong>, <strong>Translate</strong>, or <strong>Contacts</strong>) to apply dark theme.
   </div>
 
   <!-- Footer -->
   <div class="footer">
-    Works on docs.google.com/document/* only
+    <div class="status-indicator">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusLabel">DarkSpace Active</span>
+    </div>
+    <span>v2.0.0</span>
   </div>
 
   <script src="popup.js"></script>

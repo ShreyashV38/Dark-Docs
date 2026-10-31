@@ -1,123 +1,138 @@
 /**
- * Dark Mode for Google Docs — Content Script
+ * DarkSpace — Unified Multi-App Content Script
+ *
+ * Supports:
+ *   Google Docs, Google Sheets, Google Classroom, Google Slides,
+ *   Google Forms, Google Drawings, Google Scholar, Google Translate,
+ *   and Google Contacts.
  *
  * Responsibilities:
- *   1. Read persisted state from chrome.storage.local
- *   2. Apply/remove the correct class on <html> (documentElement)
- *   3. Observe DOM mutations (Docs re-renders on scroll/edit)
- *   4. Handle SPA navigation (URL changes without full reload)
- *   5. Listen for messages from popup to toggle state in real-time
- *
- * The filter is applied at the <html> level so the ENTIRE
- * Google Docs window goes dark — not just the editor canvas.
+ *   1. Detect active Google application route.
+ *   2. Synchronize configuration from chrome.storage.local.
+ *   3. Set root dataset attributes on documentElement (data-darkspace-enabled,
+ *      data-darkspace-app, data-darkspace-mode).
+ *   4. Handle SPA navigation across Google Workspace view changes.
+ *   5. Listen for live updates from popup without requiring page reload.
  */
 
 (function () {
   'use strict';
 
-  // ── State ────────────────────────────────────────────────────────
+  // ── Storage Keys ────────────────────────────────────────────────────
   const STORAGE_KEYS = {
-    enabled: 'gdocs_dark_enabled',
-    strategy: 'gdocs_dark_strategy', // 'filter' | 'targeted'
+    masterEnabled: 'darkspace_master_enabled',
+    appEnabled: 'darkspace_app_enabled',
+    mode: 'darkspace_mode', // 'full' | 'ui-only'
+    // Legacy keys
+    legacyEnabled: 'gdocs_dark_enabled',
+    legacyStrategy: 'gdocs_dark_strategy',
   };
 
-  const CLASSES = {
-    filter: 'gdocs-dark-filter',
-    targeted: 'gdocs-dark-targeted',
+  const DEFAULT_APP_STATES = {
+    docs: true,
+    sheets: true,
+    slides: true,
+    forms: true,
+    drawings: true,
+    classroom: true,
+    scholar: true,
+    translate: true,
+    contacts: true,
   };
 
   let currentState = {
-    enabled: false,
-    strategy: 'targeted',
+    masterEnabled: true,
+    appEnabled: { ...DEFAULT_APP_STATES },
+    mode: 'full',
   };
 
-  // ── Rendering Detection ──────────────────────────────────────────
-  /**
-   * Detect whether Google Docs is using canvas-based rendering.
-   * Newer versions render text onto <canvas> tiles instead of DOM spans.
-   */
-  function isCanvasRendering() {
-    return document.querySelector('.kix-canvas-tile-content') !== null;
+  // ── Route & App Detection ───────────────────────────────────────────
+  function detectApp() {
+    const host = window.location.hostname;
+    const path = window.location.pathname;
+
+    if (host.includes('docs.google.com')) {
+      if (path.includes('/document/')) return 'docs';
+      if (path.includes('/spreadsheets/')) return 'sheets';
+      if (path.includes('/presentation/')) return 'slides';
+      if (path.includes('/forms/')) return 'forms';
+      if (path.includes('/drawings/')) return 'drawings';
+      return 'docs';
+    }
+    if (host.includes('classroom.google.com')) return 'classroom';
+    if (host.includes('scholar.google.com')) return 'scholar';
+    if (host.includes('translate.google.com')) return 'translate';
+    if (host.includes('contacts.google.com')) return 'contacts';
+    return null;
   }
 
-  // ── Canvas Hook Inserter (Fallback) ──────────────────────────────
+  function isAppDark(app) {
+    if (!currentState.masterEnabled) return false;
+    if (!app) return false;
+    return currentState.appEnabled[app] !== false;
+  }
+
+  // ── Canvas Hook Inserter (Fallback for Docs/Sheets) ──────────────────
   function ensureCanvasHook() {
-    if (document.getElementById('gdocs-dark-canvas-hook')) return;
+    if (document.getElementById('darkspace-canvas-hook')) return;
+    if (!window.location.hostname.includes('docs.google.com')) return;
+
     try {
       const script = document.createElement('script');
-      script.id = 'gdocs-dark-canvas-hook';
+      script.id = 'darkspace-canvas-hook';
       script.src = chrome.runtime.getURL('canvas-hook.js');
       (document.head || document.documentElement).appendChild(script);
     } catch (e) {
-      // Handled if already injected via manifest content_scripts world: MAIN
+      // Script already injected via manifest content_scripts world: MAIN
     }
   }
 
-  function notifyTileRefresh() {
+  function notifyRefresh() {
+    window.dispatchEvent(new CustomEvent('darkspace-refresh'));
     window.dispatchEvent(new CustomEvent('gdocs-dark-refresh-tiles'));
   }
 
-  // ── Apply / Remove Dark Mode ─────────────────────────────────────
-  // Classes go on <html> (documentElement) so the filter applies
-  // to the ENTIRE page, including all chrome/toolbars.
-
-  function applyDarkMode() {
+  // ── Apply / Remove Dark Mode ─────────────────────────────────────────
+  function applyTheme() {
     const root = document.documentElement;
     if (!root) return;
 
-    // Remove both strategy classes first
-    root.classList.remove(CLASSES.filter, CLASSES.targeted);
+    const app = detectApp();
+    const enabled = isAppDark(app);
+    const mode = currentState.mode || 'full';
 
-    if (!currentState.enabled) return;
+    root.setAttribute('data-darkspace-enabled', enabled ? 'true' : 'false');
+    if (app) {
+      root.setAttribute('data-darkspace-app', app);
+    }
+    root.setAttribute('data-darkspace-mode', mode);
 
-    if (currentState.strategy === 'filter') {
-      root.classList.add(CLASSES.filter);
+    // Support legacy classes for Google Docs targeted inversion
+    if (app === 'docs') {
+      root.classList.remove('gdocs-dark-targeted', 'gdocs-dark-filter');
+      if (enabled && mode === 'full') {
+        root.classList.add('gdocs-dark-targeted');
+      }
     } else {
-      root.classList.add(CLASSES.targeted);
+      root.classList.remove('gdocs-dark-targeted', 'gdocs-dark-filter');
     }
 
-    notifyTileRefresh();
-    fixBackdrops();
+    notifyRefresh();
+    fixBackdrops(enabled);
   }
 
-  function removeDarkMode() {
-    const root = document.documentElement;
-    if (!root) return;
-    root.classList.remove(CLASSES.filter, CLASSES.targeted);
-    notifyTileRefresh();
-    fixBackdrops();
-  }
-
-  // ── Storage Read/Write ───────────────────────────────────────────
-  function loadState(callback) {
-    chrome.storage.local.get(
-      [STORAGE_KEYS.enabled, STORAGE_KEYS.strategy],
-      (result) => {
-        currentState.enabled =
-          result[STORAGE_KEYS.enabled] !== undefined
-            ? result[STORAGE_KEYS.enabled]
-            : false;
-        currentState.strategy =
-          result[STORAGE_KEYS.strategy] || 'targeted';
-
-        if (callback) callback();
-      }
-    );
-  }
-
-  // ── Modal & Popup Backdrop Darkening ────────────────────────────
-  function fixBackdrops() {
+  // ── Modal & Popup Backdrop Darkening ─────────────────────────────────
+  function fixBackdrops(enabled) {
     if (!document.body) return;
 
-    if (!currentState.enabled) {
-      document.querySelectorAll('[data-gdocs-dark-backdrop]').forEach((el) => {
+    if (!enabled) {
+      document.querySelectorAll('[data-darkspace-backdrop]').forEach((el) => {
         el.style.removeProperty('filter');
-        el.removeAttribute('data-gdocs-dark-backdrop');
+        el.removeAttribute('data-darkspace-backdrop');
       });
       return;
     }
 
-    // 1. Selector-based search
     const candidates = document.querySelectorAll(
       '.modal-dialog-bg, .goog-modal-dialog-bg, .docs-dialog-bg, .apps-dialog-bg, ' +
       '.docs-material-dialog-bg, .picker-dialog-bg, .mdc-dialog__scrim, ' +
@@ -126,34 +141,49 @@
     );
     candidates.forEach((el) => {
       el.style.setProperty('filter', 'invert(1) hue-rotate(180deg)', 'important');
-      el.setAttribute('data-gdocs-dark-backdrop', 'true');
+      el.setAttribute('data-darkspace-backdrop', 'true');
     });
-
-    // 2. Full-screen overlay detector on body children
-    const children = document.body.children;
-    const minW = window.innerWidth * 0.7;
-    const minH = window.innerHeight * 0.7;
-
-    for (let i = 0; i < children.length; i++) {
-      const el = children[i];
-      if (el.tagName !== 'DIV') continue;
-      if (el.id === 'docs-editor' || el.classList.contains('kix-appview-editor') || el.classList.contains('docs-ui-unprintable')) continue;
-      // Skip the dialog window itself
-      if (el.getAttribute('role') === 'dialog' || el.querySelector('[role="dialog"]') || el.querySelector('.modal-dialog-content')) continue;
-
-      const style = window.getComputedStyle(el);
-      const isPositioned = style.position === 'fixed' || style.position === 'absolute';
-      const isFullScreen = el.offsetWidth >= minW && el.offsetHeight >= minH;
-      const isEmpty = !el.innerText || !el.innerText.trim();
-
-      if (isPositioned && isFullScreen && isEmpty) {
-        el.style.setProperty('filter', 'invert(1) hue-rotate(180deg)', 'important');
-        el.setAttribute('data-gdocs-dark-backdrop', 'true');
-      }
-    }
   }
 
-  // ── MutationObserver ─────────────────────────────────────────────
+  // ── Storage Read/Write ───────────────────────────────────────────────
+  function loadState(callback) {
+    chrome.storage.local.get(
+      [
+        STORAGE_KEYS.masterEnabled,
+        STORAGE_KEYS.appEnabled,
+        STORAGE_KEYS.mode,
+        STORAGE_KEYS.legacyEnabled,
+        STORAGE_KEYS.legacyStrategy,
+      ],
+      (result) => {
+        // Master switch (default: true)
+        if (result[STORAGE_KEYS.masterEnabled] !== undefined) {
+          currentState.masterEnabled = result[STORAGE_KEYS.masterEnabled];
+        } else if (result[STORAGE_KEYS.legacyEnabled] !== undefined) {
+          currentState.masterEnabled = result[STORAGE_KEYS.legacyEnabled];
+        } else {
+          currentState.masterEnabled = true;
+        }
+
+        // Per-app map
+        currentState.appEnabled = {
+          ...DEFAULT_APP_STATES,
+          ...(result[STORAGE_KEYS.appEnabled] || {}),
+        };
+
+        // Appearance mode
+        if (result[STORAGE_KEYS.mode]) {
+          currentState.mode = result[STORAGE_KEYS.mode];
+        } else {
+          currentState.mode = 'full';
+        }
+
+        if (callback) callback();
+      }
+    );
+  }
+
+  // ── Observers ────────────────────────────────────────────────────────
   let observer = null;
   let bodyObserver = null;
 
@@ -161,54 +191,46 @@
     if (observer) observer.disconnect();
     if (bodyObserver) bodyObserver.disconnect();
 
-    // Observe editor container for theme stripping
-    const editorTarget = document.querySelector('.kix-appview-editor') || document.body;
-    observer = new MutationObserver(() => {
-      if (currentState.enabled) {
-        const root = document.documentElement;
-        const expectedClass =
-          currentState.strategy === 'filter' ? CLASSES.filter : CLASSES.targeted;
+    const app = detectApp();
+    const enabled = isAppDark(app);
 
-        if (!root.classList.contains(expectedClass)) {
-          applyDarkMode();
-        }
+    const root = document.documentElement;
+    observer = new MutationObserver(() => {
+      const currentAttr = root.getAttribute('data-darkspace-enabled');
+      const expectedAttr = isAppDark(detectApp()) ? 'true' : 'false';
+      if (currentAttr !== expectedAttr) {
+        applyTheme();
       }
     });
 
-    observer.observe(editorTarget, {
-      childList: true,
-      subtree: true,
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ['data-darkspace-enabled', 'class'],
     });
 
-    // Observe document.body specifically for modal popups and dialog backdrops
     if (document.body) {
       bodyObserver = new MutationObserver(() => {
-        fixBackdrops();
+        const app = detectApp();
+        if (isAppDark(app)) {
+          fixBackdrops(true);
+        }
       });
 
       bodyObserver.observe(document.body, {
         childList: true,
       });
 
-      fixBackdrops();
+      fixBackdrops(enabled);
     }
   }
 
-  // ── SPA Navigation Handler ───────────────────────────────────────
-  // Google Docs is a single-page app. When switching documents via
-  // links or browser back/forward, the URL changes without reload.
-
+  // ── SPA Navigation Watcher ───────────────────────────────────────────
   let lastUrl = location.href;
-
   function onUrlChange() {
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       loadState(() => {
-        if (currentState.enabled) {
-          applyDarkMode();
-        } else {
-          removeDarkMode();
-        }
+        applyTheme();
         startObserver();
       });
     }
@@ -232,75 +254,101 @@
     };
   }
 
-  // ── Message Listener (from popup) ────────────────────────────────
+  // ── Message Listener (from popup) ────────────────────────────────────
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'GDOCS_DARK_UPDATE') {
-      currentState.enabled = message.enabled;
-      currentState.strategy = message.strategy;
+    const app = detectApp();
 
-      if (currentState.enabled) {
-        applyDarkMode();
-      } else {
-        removeDarkMode();
+    if (message.type === 'DARKSPACE_UPDATE_STATE') {
+      if (message.masterEnabled !== undefined) {
+        currentState.masterEnabled = message.masterEnabled;
+      }
+      if (message.app && message.appEnabled !== undefined) {
+        currentState.appEnabled[message.app] = message.appEnabled;
+      }
+      if (message.mode) {
+        currentState.mode = message.mode;
       }
 
+      applyTheme();
+      sendResponse({ success: true, app, enabled: isAppDark(app) });
+      return true;
+    }
+
+    if (message.type === 'DARKSPACE_GET_STATE') {
+      sendResponse({
+        masterEnabled: currentState.masterEnabled,
+        appEnabled: app ? currentState.appEnabled[app] !== false : true,
+        mode: currentState.mode,
+        app: app,
+        supported: app !== null,
+      });
+      return true;
+    }
+
+    // Backward compatibility with legacy messages
+    if (message.type === 'GDOCS_DARK_UPDATE') {
+      currentState.masterEnabled = message.enabled;
+      if (message.strategy === 'filter') {
+        currentState.mode = 'full';
+      }
+      applyTheme();
       sendResponse({ success: true });
+      return true;
     }
 
     if (message.type === 'GDOCS_DARK_GET_STATE') {
       sendResponse({
-        enabled: currentState.enabled,
-        strategy: currentState.strategy,
-        isCanvas: isCanvasRendering(),
+        enabled: isAppDark('docs'),
+        strategy: 'targeted',
+        isCanvas: document.querySelector('.kix-canvas-tile-content') !== null,
       });
+      return true;
     }
 
     return true;
   });
 
-  // ── Storage Change Listener ──────────────────────────────────────
-  // Sync state across multiple open Docs tabs
+  // ── Storage Change Listener (multi-tab sync) ─────────────────────────
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
 
     let needsUpdate = false;
-
-    if (changes[STORAGE_KEYS.enabled]) {
-      currentState.enabled = changes[STORAGE_KEYS.enabled].newValue;
+    if (changes[STORAGE_KEYS.masterEnabled]) {
+      currentState.masterEnabled = changes[STORAGE_KEYS.masterEnabled].newValue;
       needsUpdate = true;
     }
-    if (changes[STORAGE_KEYS.strategy]) {
-      currentState.strategy = changes[STORAGE_KEYS.strategy].newValue;
+    if (changes[STORAGE_KEYS.appEnabled]) {
+      currentState.appEnabled = {
+        ...currentState.appEnabled,
+        ...(changes[STORAGE_KEYS.appEnabled].newValue || {}),
+      };
+      needsUpdate = true;
+    }
+    if (changes[STORAGE_KEYS.mode]) {
+      currentState.mode = changes[STORAGE_KEYS.mode].newValue;
       needsUpdate = true;
     }
 
     if (needsUpdate) {
-      if (currentState.enabled) {
-        applyDarkMode();
-      } else {
-        removeDarkMode();
-      }
+      applyTheme();
     }
   });
 
-  // ── Initialization ───────────────────────────────────────────────
+  // ── Initialization ───────────────────────────────────────────────────
   function init() {
     ensureCanvasHook();
 
     loadState(() => {
-      if (currentState.enabled) {
-        applyDarkMode();
-      }
+      applyTheme();
       startObserver();
     });
 
     watchNavigation();
 
-    // Re-apply when DOM is fully ready (Docs can be slow to load)
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => {
         loadState(() => {
-          if (currentState.enabled) applyDarkMode();
+          applyTheme();
           startObserver();
         });
       });

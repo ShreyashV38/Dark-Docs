@@ -1,253 +1,551 @@
 /*
- * Dark Mode for Google Docs — CSS Stylesheet
+ * DarkSpace — Unified Multi-App Dark Mode Stylesheet
  *
- * Both strategies apply filter: invert() at the <html> level
- * so the ENTIRE Google Docs window goes dark — titlebar, menubar,
- * toolbar, ruler, editor canvas, sidebars, dialogs, everything.
- *
- * Classes are added to <html> (documentElement), not <body>.
- *
- * Two strategies:
- *   .gdocs-dark-filter   → Simple full inversion, no image restoration
- *   .gdocs-dark-targeted → Full inversion + double-invert images + 
- *                           fine-tuned color corrections
+ * Scoped Material 3 Dark theme for Google Workspace & web apps:
+ * Docs, Sheets, Classroom, Slides, Forms, Drawings, Scholar, Translate, and Contacts.
  */
 
+/* ============================================================
+ * 1. COLOR PALETTE VARIABLES (:root)
+ * ============================================================ */
+:root {
+  --ds-bg-primary: #131314;
+  --ds-bg-elevated: #1e1f22;
+  --ds-bg-surface: #282a2e;
+  --ds-border: #3c4043;
+  --ds-text-primary: #e8eaed;
+  --ds-text-secondary: #9aa0a6;
+  --ds-accent: #8ab4f8;
+  --ds-hover: rgba(255, 255, 255, 0.08);
+  --ds-active: rgba(138, 180, 248, 0.16);
+}
+
+/* Base transition for smooth toggling */
+html[data-darkspace-app] {
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
 
 /* ============================================================
- * STRATEGY 1: Full CSS Filter Inversion
- * Inverts the entire page. Quick, comprehensive, everything dark.
- * Images (including in-document) will appear inverted.
+ * 2. GLOBAL DARK SCROLLBARS (Scoped)
  * ============================================================ */
-
-html.gdocs-dark-filter {
-  filter: invert(0.92) hue-rotate(180deg) !important;
+html[data-darkspace-enabled="true"] * {
+  scrollbar-color: #3c4043 transparent !important;
 }
 
-
-/* ============================================================
- * STRATEGY 2: Smart Inversion (Targeted)
- * Same full-page inversion as Strategy 1, BUT additionally:
- *   - Double-inverts <img>, <video>, embedded objects to restore
- *     their true colors wherever they exist as actual DOM nodes
- *   - Fine-tunes specific UI element colors for polish
- *   
- * NOTE: Images rendered as canvas pixels (newer Google Docs 
- * canvas rendering) are part of the <canvas> bitmap and CANNOT
- * be selectively un-inverted via CSS. This is a fundamental
- * platform limitation. Those images will still appear inverted.
- * ============================================================ */
-
-html.gdocs-dark-targeted {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-
-/* ============================================================
- * IMAGE RESTORATION (Targeted strategy only)
- * Double-invert LEAF media elements to cancel the parent html
- * inversion. Uses invert(1) to perfectly cancel the parent's
- * invert(1): composite = 1-(1-x) = x (identity).
- *
- * CRITICAL: Only apply filter to the deepest media element
- * (e.g. <img>), NOT to its container (.kix-embeddedobject).
- * Filtering both container AND child causes triple-inversion.
- * ============================================================ */
-
-/* --- All <img> elements (doc images, avatars, logos) ---
- * This is the primary rule. Google Docs renders embedded images
- * as actual <img> tags inside DOM overlay containers. */
-html.gdocs-dark-targeted img {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- Video and iframe embeds --- */
-html.gdocs-dark-targeted video,
-html.gdocs-dark-targeted iframe {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- Inline drawings (rendered as SVG/canvas, not <img>) ---
- * These are NOT containers with <img> inside, they are the
- * actual rendered drawing element. */
-html.gdocs-dark-targeted .kix-inlinedrawing > canvas,
-html.gdocs-dark-targeted .kix-inlinedrawing > svg {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- Background images (elements using CSS background-image) ---
- * Some Docs elements render images via background-image
- * instead of <img> tags. Target these specifically. */
-html.gdocs-dark-targeted .kix-appview-editor [style*="background-image"] {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- Google Docs Homescreen document previews (Recent documents) ---
- * Google Docs renders recent document previews as background-image
- * containers inside grid and list items. Double-invert them so they
- * match the template gallery in their natural true colors. */
-html.gdocs-dark-targeted .docs-homescreen-grid-item-thumbnail,
-html.gdocs-dark-targeted .docs-homescreen-grid-item-thumbnail-image,
-html.gdocs-dark-targeted .docs-homescreen-list-item-thumbnail,
-html.gdocs-dark-targeted .docs-homescreen-thumbnail,
-html.gdocs-dark-targeted .docs-homescreen-item-thumbnail,
-html.gdocs-dark-targeted [class*="homescreen-grid-item"] [style*="background-image"],
-html.gdocs-dark-targeted [class*="homescreen-list-item"] [style*="background-image"],
-html.gdocs-dark-targeted [class*="homescreen-grid-item-thumbnail"],
-html.gdocs-dark-targeted [class*="homescreen-thumbnail"] {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* Prevent double-inversion on nested <img> tags within thumbnails */
-html.gdocs-dark-targeted .docs-homescreen-grid-item-thumbnail img,
-html.gdocs-dark-targeted .docs-homescreen-list-item-thumbnail img,
-html.gdocs-dark-targeted [class*="homescreen-grid-item-thumbnail"] img {
-  filter: none !important;
-}
-
-
-/* ============================================================
- * FINE-TUNED COLOR CORRECTIONS (Targeted strategy only)
- * After full-page inversion, some elements may have weird hues.
- * These overrides normalize them for a polished dark theme.
- * ============================================================ */
-
-/* --- Page shadow (inverted white → dark, but we want a subtle dark shadow) --- */
-html.gdocs-dark-targeted .kix-page {
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* --- Selection highlight (blue → orange after inversion, fix it) --- */
-html.gdocs-dark-targeted .kix-selection-overlay {
-  background-color: rgba(60, 100, 255, 0.35) !important;
-}
-
-/* --- Cursor caret --- */
-html.gdocs-dark-targeted .kix-cursor-caret {
-  border-color: #4a7aff !important;
-}
-
-/* --- Links (inverted blue becomes orange-ish, fix to a nice blue) --- */
-html.gdocs-dark-targeted .kix-lineview a {
-  color: #5b8aff !important;
-}
-
-/* --- Modal Dialog & Popup Backdrops (Scrims) ---
- * Google Docs dims the background behind popups with a translucent backdrop
- * (.modal-dialog-bg or ::backdrop). Under full-page inversion, the dark backdrop turns
- * into a milky/lightish fog. Double-inverting it restores its natural dark dimming shade.
- */
-html.gdocs-dark-targeted dialog::backdrop,
-html.gdocs-dark-filter dialog::backdrop,
-html.gdocs-dark-targeted ::backdrop,
-html.gdocs-dark-filter ::backdrop,
-html.gdocs-dark-targeted [data-gdocs-dark-backdrop],
-html.gdocs-dark-filter [data-gdocs-dark-backdrop],
-html.gdocs-dark-targeted .modal-dialog-bg,
-html.gdocs-dark-filter .modal-dialog-bg,
-html.gdocs-dark-targeted .goog-modal-dialog-bg,
-html.gdocs-dark-filter .goog-modal-dialog-bg,
-html.gdocs-dark-targeted .docs-dialog-bg,
-html.gdocs-dark-filter .docs-dialog-bg,
-html.gdocs-dark-targeted .apps-dialog-bg,
-html.gdocs-dark-filter .apps-dialog-bg,
-html.gdocs-dark-targeted .docs-material-dialog-bg,
-html.gdocs-dark-filter .docs-material-dialog-bg,
-html.gdocs-dark-targeted .picker-dialog-bg,
-html.gdocs-dark-filter .picker-dialog-bg,
-html.gdocs-dark-targeted .mdc-dialog__scrim,
-html.gdocs-dark-filter .mdc-dialog__scrim,
-html.gdocs-dark-targeted [class*="modal-dialog-bg"],
-html.gdocs-dark-filter [class*="modal-dialog-bg"],
-html.gdocs-dark-targeted [class*="dialog-bg"],
-html.gdocs-dark-filter [class*="dialog-bg"],
-html.gdocs-dark-targeted [class*="modal-backdrop"],
-html.gdocs-dark-filter [class*="modal-backdrop"],
-html.gdocs-dark-targeted [class*="dialog-backdrop"],
-html.gdocs-dark-filter [class*="dialog-backdrop"],
-html.gdocs-dark-targeted [class*="scrim"],
-html.gdocs-dark-filter [class*="scrim"] {
-  filter: invert(1) hue-rotate(180deg) !important;
-}
-
-/* --- Scrollbars ---
- * Note: Under the root filter invert(0.92) hue-rotate(180deg):
- *   - Dark CSS colors invert to LIGHT on screen.
- *   - Light CSS colors invert to DARK on screen.
- *   - Transparent remains transparent (showing dark editor background).
- * To ensure the scrollbar track is dark all the time (whether hovered or not):
- *   we keep the track transparent.
- * To make the scroll selector (thumb) light:
- *   we give it dark CSS colors (#252530 inverts to light silver-grey,
- *   #0d0d14 inverts to bright white on hover).
- */
-html.gdocs-dark-targeted,
-html.gdocs-dark-targeted *,
-html.gdocs-dark-filter,
-html.gdocs-dark-filter * {
-  scrollbar-color: #252530 transparent !important;
-}
-
-html.gdocs-dark-targeted ::-webkit-scrollbar,
-html.gdocs-dark-filter ::-webkit-scrollbar {
+html[data-darkspace-enabled="true"] ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 
-html.gdocs-dark-targeted ::-webkit-scrollbar-track,
-html.gdocs-dark-targeted ::-webkit-scrollbar-track:hover,
-html.gdocs-dark-filter ::-webkit-scrollbar-track,
-html.gdocs-dark-filter ::-webkit-scrollbar-track:hover {
+html[data-darkspace-enabled="true"] ::-webkit-scrollbar-track {
   background: transparent !important;
 }
 
-html.gdocs-dark-targeted ::-webkit-scrollbar-corner,
-html.gdocs-dark-filter ::-webkit-scrollbar-corner {
-  background: transparent !important;
-}
-
-html.gdocs-dark-targeted ::-webkit-scrollbar-thumb,
-html.gdocs-dark-filter ::-webkit-scrollbar-thumb {
-  background: #252530 !important; /* Inverts to crisp light silver-grey on screen */
+html[data-darkspace-enabled="true"] ::-webkit-scrollbar-thumb {
+  background: #3c4043 !important;
   border-radius: 6px;
-  border: 2px solid #f4f4f7;      /* Inverts to dark border spacing */
+  border: 2px solid transparent !important;
+  background-clip: content-box !important;
 }
 
-html.gdocs-dark-targeted ::-webkit-scrollbar-thumb:hover,
-html.gdocs-dark-filter ::-webkit-scrollbar-thumb:hover {
-  background: #0d0d14 !important; /* Inverts to bright white on hover */
+html[data-darkspace-enabled="true"] ::-webkit-scrollbar-thumb:hover {
+  background: #5f6368 !important;
+  background-clip: content-box !important;
 }
 
-html.gdocs-dark-targeted ::-webkit-scrollbar-thumb:active,
-html.gdocs-dark-filter ::-webkit-scrollbar-thumb:active {
-  background: #000000 !important; /* Inverts to full light brightness */
-}
-
-/* Custom DOM scrollbars (if Google Docs uses Closure Library scrollbars) */
-html.gdocs-dark-targeted .goog-custom-scroll-bar,
-html.gdocs-dark-targeted .goog-custom-scroll-bar:hover,
-html.gdocs-dark-filter .goog-custom-scroll-bar,
-html.gdocs-dark-filter .goog-custom-scroll-bar:hover {
+html[data-darkspace-enabled="true"] ::-webkit-scrollbar-corner {
   background: transparent !important;
 }
-
-html.gdocs-dark-targeted .goog-custom-scroll-bar-thumb,
-html.gdocs-dark-filter .goog-custom-scroll-bar-thumb {
-  background: #252530 !important;
-  border-radius: 6px;
-}
-
-html.gdocs-dark-targeted .goog-custom-scroll-bar-thumb:hover,
-html.gdocs-dark-filter .goog-custom-scroll-bar-thumb:hover {
-  background: #0d0d14 !important;
-}
-
 
 /* ============================================================
- * TRANSITION
- * Smooth toggle animation
+ * 3. SHARED GOOGLE WORKSPACE EDITOR SHELL
+ * (Docs, Sheets, Slides, Drawings)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"],
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"],
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"],
+html[data-darkspace-enabled="true"][data-darkspace-app="drawings"] {
+  background-color: var(--ds-bg-primary) !important;
+}
+
+/* Top chrome, titlebar, and header bar */
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"] #docs-chrome,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #docs-chrome,
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] #docs-chrome,
+html[data-darkspace-enabled="true"][data-darkspace-app="drawings"] #docs-chrome,
+html[data-darkspace-enabled="true"] #docs-header,
+html[data-darkspace-enabled="true"] .docs-titlebar-badge,
+html[data-darkspace-enabled="true"] .docs-title-input {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Menu bar */
+html[data-darkspace-enabled="true"] .docs-menubar,
+html[data-darkspace-enabled="true"] .menu-bar,
+html[data-darkspace-enabled="true"] .goog-menubar {
+  background-color: var(--ds-bg-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"] .goog-control,
+html[data-darkspace-enabled="true"] .goog-menu-button,
+html[data-darkspace-enabled="true"] .goog-menuitem,
+html[data-darkspace-enabled="true"] .docs-material-menu-button-flat-primary {
+  color: var(--ds-text-primary) !important;
+}
+
+html[data-darkspace-enabled="true"] .goog-control:hover,
+html[data-darkspace-enabled="true"] .goog-menu-button:hover,
+html[data-darkspace-enabled="true"] .goog-menuitem:hover,
+html[data-darkspace-enabled="true"] .goog-menuitem-highlight {
+  background-color: var(--ds-hover) !important;
+}
+
+/* Dropdown menus & popups */
+html[data-darkspace-enabled="true"] .goog-menu,
+html[data-darkspace-enabled="true"] .docs-material-menu {
+  background-color: var(--ds-bg-elevated) !important;
+  border: 1px solid var(--ds-border) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+html[data-darkspace-enabled="true"] .goog-menuitem-content,
+html[data-darkspace-enabled="true"] .goog-menuseparator {
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Primary toolbar */
+html[data-darkspace-enabled="true"] #docs-toolbar-wrapper,
+html[data-darkspace-enabled="true"] .docs-toolbar-wrapper,
+html[data-darkspace-enabled="true"] #docs-toolbar,
+html[data-darkspace-enabled="true"] .goog-toolbar {
+  background: var(--ds-bg-elevated) !important;
+  border-bottom: 1px solid var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"] .goog-toolbar-button,
+html[data-darkspace-enabled="true"] .goog-toolbar-menu-button,
+html[data-darkspace-enabled="true"] .goog-toolbar-combo-button {
+  color: var(--ds-text-primary) !important;
+}
+
+html[data-darkspace-enabled="true"] .goog-toolbar-button-hover,
+html[data-darkspace-enabled="true"] .goog-toolbar-menu-button-hover {
+  background-color: var(--ds-hover) !important;
+}
+
+html[data-darkspace-enabled="true"] .goog-toolbar-button-checked,
+html[data-darkspace-enabled="true"] .goog-toolbar-button-active {
+  background-color: var(--ds-active) !important;
+  color: var(--ds-accent) !important;
+}
+
+/* Toolbar SVG icons */
+html[data-darkspace-enabled="true"] .docs-icon,
+html[data-darkspace-enabled="true"] .goog-toolbar-button .docs-icon-img,
+html[data-darkspace-enabled="true"] .goog-toolbar-menu-button .docs-icon-img {
+  filter: brightness(0.9) contrast(1.2) invert(0.85);
+}
+
+/* Companion sidebar (Calendar, Keep, Tasks) */
+html[data-darkspace-enabled="true"] .app-switcher-container,
+html[data-darkspace-enabled="true"] .companion-collapsible-panel,
+html[data-darkspace-enabled="true"] .companion-guest-app-switcher {
+  background-color: var(--ds-bg-primary) !important;
+  border-left: 1px solid var(--ds-border) !important;
+}
+
+/* Find and replace bar & floating toolbars */
+html[data-darkspace-enabled="true"] .docs-findinput-container,
+html[data-darkspace-enabled="true"] .docs-findbar {
+  background-color: var(--ds-bg-elevated) !important;
+  border: 1px solid var(--ds-border) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* Modal Dialogs */
+html[data-darkspace-enabled="true"] .modal-dialog,
+html[data-darkspace-enabled="true"] .goog-modal-dialog,
+html[data-darkspace-enabled="true"] .docs-material-dialog {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text-primary) !important;
+  border: 1px solid var(--ds-border) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+
+html[data-darkspace-enabled="true"] .modal-dialog-title,
+html[data-darkspace-enabled="true"] .docs-material-dialog-title {
+  color: var(--ds-text-primary) !important;
+}
+
+/* ============================================================
+ * 4. GOOGLE DOCS (/document/)
  * ============================================================ */
 
-html {
-  transition: filter 0.3s ease;
+/* Full Dark Mode for Google Docs: Document canvas inversion with smart image restoration */
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"],
+html.gdocs-dark-targeted {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
+
+/* Media double-inversion to restore true colors in Docs Full Mode */
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] img,
+html.gdocs-dark-targeted img,
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] video,
+html.gdocs-dark-targeted video,
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] iframe,
+html.gdocs-dark-targeted iframe,
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] .kix-inlinedrawing > canvas,
+html.gdocs-dark-targeted .kix-inlinedrawing > canvas,
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] .kix-inlinedrawing > svg,
+html.gdocs-dark-targeted .kix-inlinedrawing > svg,
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] [class*="homescreen-grid-item"] [style*="background-image"],
+html.gdocs-dark-targeted [class*="homescreen-grid-item"] [style*="background-image"] {
+  filter: invert(1) hue-rotate(180deg) !important;
+}
+
+/* Double-inversion guardrail for nested thumbnails */
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] [class*="homescreen-grid-item-thumbnail"] img,
+html.gdocs-dark-targeted [class*="homescreen-grid-item-thumbnail"] img {
+  filter: none !important;
+}
+
+/* Selection and caret adjustments in Docs Full Mode */
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] .kix-selection-overlay,
+html.gdocs-dark-targeted .kix-selection-overlay {
+  background-color: rgba(60, 100, 255, 0.35) !important;
+}
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="full"] .kix-cursor-caret,
+html.gdocs-dark-targeted .kix-cursor-caret {
+  border-color: #4a7aff !important;
+}
+
+/* UI-Only Mode for Docs: Dark toolbars and chrome, untouched white page */
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="ui-only"] {
+  filter: none !important;
+  background-color: var(--ds-bg-primary) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="ui-only"] #kix-ruler {
+  background-color: var(--ds-bg-elevated) !important;
+  border-color: var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="docs"][data-darkspace-mode="ui-only"] .docs-editor-container {
+  background-color: #2b2c2f !important;
+}
+
+/* ============================================================
+ * 5. GOOGLE SHEETS (/spreadsheets/)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* Formula bar container & inputs */
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #t-formula-bar-input-container,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #formula-bar,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #t-name-box,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] .cell-input,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #t-formula-bar-input {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Bottom sheet tab bar */
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] .docs-sheet-tab-slider,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #docs-editor-container,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #grid-bottom-bar,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] .grid-bottom-bar {
+  background-color: var(--ds-bg-primary) !important;
+  border-top: 1px solid var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] .docs-sheet-tab {
+  background-color: var(--ds-bg-surface) !important;
+  color: var(--ds-text-secondary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] .docs-sheet-active-tab {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-accent) !important;
+  border-bottom: 2px solid var(--ds-accent) !important;
+}
+
+/* Google Sheets grid container background */
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #waffle-canvas-container,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] #waffle-grid-container {
+  background-color: var(--ds-bg-elevated) !important;
+}
+
+/* Explore panel & sidebar */
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] .waffle-assistant-entrypoint,
+html[data-darkspace-enabled="true"][data-darkspace-app="sheets"] .waffle-sidebar {
+  background-color: var(--ds-bg-elevated) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* ============================================================
+ * 6. GOOGLE SLIDES & DRAWINGS (/presentation/, /drawings/)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"],
+html[data-darkspace-enabled="true"][data-darkspace-app="drawings"] {
+  background-color: var(--ds-bg-primary) !important;
+}
+
+/* Filmstrip slide preview panel on the left */
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] .punch-filmstrip-scroll,
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] .punch-filmstrip-nodes,
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] .filmstrip {
+  background-color: var(--ds-bg-primary) !important;
+  border-right: 1px solid var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] .punch-filmstrip-thumbnail {
+  background-color: var(--ds-bg-surface) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Speaker notes area */
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] .punch-speaker-notes-container,
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] .punch-speaker-notes-editor {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text-primary) !important;
+  border-top: 1px solid var(--ds-border) !important;
+}
+
+/* Slide viewport workspace background (canvas itself remains untouched) */
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] .punch-viewport-layer,
+html[data-darkspace-enabled="true"][data-darkspace-app="slides"] #workspace-container,
+html[data-darkspace-enabled="true"][data-darkspace-app="drawings"] #workspace-container {
+  background-color: #1a1a1c !important;
+}
+
+/* ============================================================
+ * 7. GOOGLE CLASSROOM (classroom.google.com)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* Classroom Top Bar & Navigation Drawer */
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] header,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] nav,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] [role="banner"],
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] [role="navigation"] {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Class cards on home grid */
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] ol > li,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] .A57U5e,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] .c3M06e,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] [data-item-id] {
+  background-color: var(--ds-bg-elevated) !important;
+  border: 1px solid var(--ds-border) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* Stream announcement cards & classwork items */
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] .jfdpfd,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] .g3k3oc,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] .VBEdtc,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] [role="article"],
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] [role="main"] > div {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Heading and text colors */
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] h1,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] h2,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] h3,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] p,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] span {
+  color: var(--ds-text-primary);
+}
+
+/* Guardrail: User profile pictures, class banners & attachments are NEVER inverted */
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] img,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] [style*="background-image"],
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] .gb_d,
+html[data-darkspace-enabled="true"][data-darkspace-app="classroom"] .gb_A {
+  filter: none !important;
+}
+
+/* ============================================================
+ * 8. GOOGLE FORMS (/forms/)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* Forms header & tabs */
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] header,
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] .freebirdFormeditorHeaderHeader,
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] [role="tablist"] {
+  background-color: var(--ds-bg-elevated) !important;
+  border-bottom: 1px solid var(--ds-border) !important;
+}
+
+/* Question cards and respondent form view cards */
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] .freebirdFormeditorViewItemRoot,
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] .freebirdFormviewerViewFormCard,
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] .freebirdFormviewerViewHeaderHeader,
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] [role="listitem"] {
+  background-color: var(--ds-bg-elevated) !important;
+  border: 1px solid var(--ds-border) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* Form inputs & question text */
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] input,
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] textarea {
+  background-color: var(--ds-bg-surface) !important;
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Floating side toolbar in Form editor */
+html[data-darkspace-enabled="true"][data-darkspace-app="forms"] .freebirdFormeditorSideToolbar {
+  background-color: var(--ds-bg-surface) !important;
+  border: 1px solid var(--ds-border) !important;
+}
+
+/* ============================================================
+ * 9. GOOGLE SCHOLAR (scholar.google.com)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] body,
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] #gs_bdy,
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] #gs_top {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+/* Scholar header & search bar */
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] #gs_hdr,
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] #gs_hdr_md {
+  background-color: var(--ds-bg-elevated) !important;
+  border-bottom: 1px solid var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] #gs_hdr_tsi {
+  background-color: var(--ds-bg-surface) !important;
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Scholar search result cards & citations */
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] .gs_r,
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] .gs_ri {
+  color: var(--ds-text-secondary) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] .gs_rt a {
+  color: var(--ds-accent) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] .gs_a {
+  color: #81c995 !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] .gs_rs {
+  color: var(--ds-text-secondary) !important;
+}
+
+/* Citation modals & popups */
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] #gs_md_d-c,
+html[data-darkspace-enabled="true"][data-darkspace-app="scholar"] .gs_md_d {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text-primary) !important;
+  border: 1px solid var(--ds-border) !important;
+}
+
+/* ============================================================
+ * 10. GOOGLE TRANSLATE (translate.google.com)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] header,
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] nav {
+  background-color: var(--ds-bg-elevated) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Source and target translation panels */
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] .MOk22e,
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] .c-b,
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] textarea {
+  background-color: var(--ds-bg-elevated) !important;
+  color: var(--ds-text-primary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Language selector buttons and dropdowns */
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] [role="tablist"],
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] [role="tab"] {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-secondary) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="translate"] [role="tab"][aria-selected="true"] {
+  color: var(--ds-accent) !important;
+  border-bottom: 2px solid var(--ds-accent) !important;
+}
+
+/* ============================================================
+ * 11. GOOGLE CONTACTS (contacts.google.com)
+ * ============================================================ */
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] header,
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] nav,
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] [role="navigation"] {
+  background-color: var(--ds-bg-elevated) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Contact rows and cards */
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] [role="row"],
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] tr,
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] .z80M1 {
+  background-color: var(--ds-bg-primary) !important;
+  color: var(--ds-text-primary) !important;
+  border-bottom: 1px solid var(--ds-border) !important;
+}
+
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] [role="row"]:hover,
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] tr:hover {
+  background-color: var(--ds-hover) !important;
+}
+
+/* Detail cards */
+html[data-darkspace-enabled="true"][data-darkspace-app="contacts"] [role="main"] > div {
+  background-color: var(--ds-bg-elevated) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text-primary) !important;
 }
